@@ -1,101 +1,235 @@
-# Invoice Generator
+# Invoice Generator with Telegram Bot
 
-Python script for generating invoices from a Word template with automatic data replacement and PDF conversion.
+🚨 **IMPORTANT: Python 3.13 Compatible Version**
+
+Automated invoice generation system with Telegram bot support, adapted for **Python 3.13** and **python-telegram-bot 21.8**.
 
 ## Features
 
-- Replaces placeholders in DOCX template with actual data
-- Fetches real-time NBP (National Bank of Poland) exchange rates
-- Converts amounts to words in Polish and English
-- Generates both DOCX and PDF outputs
-- Supports organization data from JSON configuration
+### ✅ Working Features
+- 📄 DOCX invoice generation from Word template
+- 🔄 Automatic placeholder replacement with data
+- 💱 NBP (National Bank of Poland) exchange rate fetching
+- 🔤 Amount conversion to words (Polish and English)
+- 📂 Save to `invoices/` folder
+- 🏢 Multiple organizations support
+- 🤖 **Telegram Bot (version 21.8) - FULLY WORKING**
+- 🔒 User access control
 
-## Installation
+### ⚠️ Disabled Features
+- ❌ PDF generation (compatibility issues with Python 3.13)
 
-1. Install Python dependencies:
+## System Requirements
+
+- **Python 3.13** (required!)
+- pip package manager
+- Internet connection for NBP rate fetching
+
+## Quick Start
+
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-## Usage
+### 2. Telegram Bot Setup (recommended)
 
+#### Create Bot via BotFather
+1. Find @BotFather in Telegram
+2. Send `/newbot`
+3. Follow the instructions
+4. Save the token
+
+#### Automatic Setup
 ```bash
-python generate_invoice.py <date> <end_date> <buyer> <recipient> <amount>
+python setup_bot.py
 ```
 
-### Example
+#### Run the Bot
 ```bash
-python generate_invoice.py 04.09.2025 14/09/2025 org org 3000.00
+python telegram_bot.py
 ```
 
-### Parameters
-- `date`: Invoice date in DD.MM.YYYY format (e.g., 04.09.2025)
-- `end_date`: Payment deadline in DD/MM/YYYY format (e.g., 14/09/2025)
-- `buyer`: Organization name (must exist in orgs.json)
-- `recipient`: Organization name (must exist in orgs.json)
-- `amount`: Invoice amount in decimal format (e.g., 3000.00)
+## Available Files
+
+### Recommended for Use
+- ✅ **`telegram_bot.py`** - Main bot (Python 3.13 + PTB 21.8)
+- ✅ `generate_invoice.py` - CLI generator (without PDF)
+- ✅ `setup_bot.py` - Bot setup
+
+### Deprecated/Test Files
+- ❌ Old bot versions (removed)
+- 🧪 `test_generate.py` - Test version
+
+## Telegram Bot Commands
+
+### `/start`
+Welcome message and basic information
+
+### `/generate`
+Create invoice
+```
+/generate <date> <end_date> <buyer> <recipient> <amount>
+```
+
+**Example:**
+```
+/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+```
+
+### `/status`
+Check system status
+
+### `/orgs`
+List available organizations
+
+### `/help`
+Command help
+
+## Data Formats
+
+- **Date:** DD.MM.YYYY (04.09.2025)
+- **End Date:** DD/MM/YYYY (14/09/2025)
+- **Amount:** Number with dot (3000.00)
+
+## CLI Usage
+
+```bash
+python generate_invoice.py 04.09.2025 "14/09/2025" "Retano-Latvia" "Retano-Latvia" 3000.00
+```
+
+## Project Structure
+
+```
+generate-invoice/
+├── 📄 invoice_template.docx       # Invoice template
+├── 📊 orgs.json                   # Organization data
+├── 🚀 telegram_bot.py             # ✅ Main bot (Python 3.13 + PTB 21.8)
+├── 🔧 generate_invoice.py         # CLI generator
+├── 🔤 number_converter.py         # Number to words converter
+├── ⚙️ setup_bot.py               # Bot setup
+├── 📋 requirements.txt            # Dependencies
+├── 📝 config.env                 # Configuration (created during setup)
+├── 📂 invoices/                  # Folder for generated files
+└── 🧪 test_generate.py           # Test version
+```
 
 ## Template Placeholders
 
-The script replaces the following placeholders in `invoice_template.docx`:
+In the `invoice_template.docx` file, these placeholders are replaced:
 
-- `<dd>` - Day from the invoice date
-- `<mm>` - Month from the invoice date
-- `<yyyy>` - Year from the invoice date
-- `<buyer>` - Buyer organization data from orgs.json
-- `<recipient>` - Recipient organization data from orgs.json
-- `<summ>` - Invoice amount
+- `<dd>` - Day
+- `<mm>` - Month  
+- `<yyyy>` - Year
+- `<buyer>` - Buyer data
+- `<recipient>` - Recipient data
+- `<summ>` - Amount
 - `<termin>` - Payment deadline
 - `<summ_words_polland>` - Amount in words (Polish)
 - `<summ_words_english>` - Amount in words (English)
-- `<nbp_kurs>` - NBP EUR exchange rate for the invoice date
-
-## Output
-
-The script generates files in the `invoices/` directory:
-- `invoices/Peraviortkin_Mi_code_<date>.docx` - Word document
-
-**Key Features:**
-- ✅ Preserves original font formatting when replacing placeholders
-- ✅ Creates `invoices/` directory automatically
-- ✅ Prevents automatic file opening after generation
+- `<nbp_kurs>` - NBP EUR exchange rate
 
 ## Organization Configuration
 
-Edit `orgs.json` to add/modify organization data:
-
+File `orgs.json`:
 ```json
 [
     {
-        "name": "org",
-        "data": "data"
+        "name": "Retano-Latvia",
+        "data": "RETANO SOLUTIONS LTD\nVesetas 7, Riga, LATVIA\nBank: АО Rietumu Banka\nNr rachunku/ Bank account number: LV72RTMB0000700806618\nSWIFT: RTMBLV2X"
     }
 ]
 ```
 
-## Testing
+## Fixed Issues
 
-Run the test script to verify functionality:
-```bash
-python test_invoice.py
+### ✅ Python 3.13 Compatibility
+- Used compatible version python-telegram-bot 21.8
+- Fixed all issues with `imghdr` module
+- Updated imports for new API
+
+### ✅ Telegram Bot Issues  
+- Fixed "Application object has no attribute" error
+- Correct async/await operation
+- Proper Markdown V2 formatting
+- Stable polling operation
+
+### ✅ Stability
+- Removed problematic PDF generation
+- Improved error handling
+- Detailed logging
+
+## Dependencies
+
+```txt
+python-docx==1.1.2
+docx2pdf==0.1.8
+requests==2.31.0
+python-telegram-bot==21.8
+python-dotenv==1.0.0
 ```
 
 ## Troubleshooting
 
-### PDF Generation Issues
-If PDF generation fails:
-1. Install LibreOffice
-2. Ensure LibreOffice is in your system PATH
-3. On Windows, you may need to restart your terminal after installing LibreOffice
+### Version Check
+```bash
+python --version          # Should be 3.13.x
+pip show python-telegram-bot  # Should be 21.8
+```
 
-### NBP Rate Fetch Issues
-If NBP rate fetching fails, the script will use a default rate of 4.30 EUR/PLN.
+### Reinstallation
+```bash
+pip install python-telegram-bot==21.8 --force-reinstall
+pip install -r requirements.txt --force-reinstall
+```
 
-### Template Not Found
-Ensure `invoice_template.docx` exists in the same directory as the script.
+### Bot Issues
+1. **Use ONLY `telegram_bot.py`**
+2. Check token in `config.env`
+3. Make sure User ID is in ALLOWED_USER_IDS
+4. Check internet connection
 
-## Requirements
+### PDF Generation
+⚠️ **PDF generation disabled** due to compatibility issues.
+Use DOCX files or convert manually.
 
-- Python 3.7+
-- python-docx
-- requests
+## Example Session
+
+```bash
+# 1. Installation
+pip install -r requirements.txt
+
+# 2. Bot setup
+python setup_bot.py
+
+# 3. Start bot
+python telegram_bot.py
+
+# 4. In Telegram:
+/start
+/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+```
+
+## Security
+
+- 🔒 Never publish `config.env`
+- 👥 Restrict access via ALLOWED_USER_IDS
+- 🔑 Regularly change bot token
+
+## Technical Notes
+
+- ⚡ Fully compatible with Python 3.13
+- 🤖 Uses python-telegram-bot 21.8 (latest stable)
+- 🔄 All async functions correctly implemented
+- 📝 Markdown V2 formatting
+- 🛡️ Robust error handling
+
+---
+
+## Status: ✅ FULLY WORKING
+
+Project fully working with Python 3.13 and Telegram Bot API 21.8!
+
+## License
+
+MIT License

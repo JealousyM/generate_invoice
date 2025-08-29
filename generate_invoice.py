@@ -3,7 +3,7 @@
 Invoice Generator Script
 
 Usage: python generate_invoice.py <date> <end_date> <buyer> <recipient> <amount>
-Example: python generate_invoice.py 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+Example: python generate_invoice.py 04.09.2025 14/09/2025 organization organization 3000.00
 """
 
 import sys
@@ -261,7 +261,7 @@ class InvoiceGenerator:
 def main():
     if len(sys.argv) != 6:
         print("Usage: python generate_invoice.py <date> <end_date> <buyer> <recipient> <amount>")
-        print("Example: python generate_invoice.py 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00")
+        print("Example: python generate_invoice.py 04.09.2025 14/09/2025 organization organization 3000.00")
         sys.exit(1)
     
     date_str = sys.argv[1]
