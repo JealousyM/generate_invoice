@@ -9,7 +9,7 @@ from pathlib import Path
 
 def create_config_file():
     """Create configuration file if it doesn't exist"""
-    config_path = Path("config.env")
+    config_path = Path("../config.env")
     
     if config_path.exists():
         print("✅ config.env file already exists")
@@ -90,6 +90,8 @@ def check_invoice_system():
     print("🏦 Checking invoice generation system...")
     
     try:
+        # Add parent directory to path for imports
+        sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
         from generate_invoice import InvoiceGenerator
         
         generator = InvoiceGenerator()
@@ -106,7 +108,7 @@ def create_directories():
     """Create necessary directories"""
     print("📁 Creating necessary folders...")
     
-    directories = ["invoices"]
+    directories = ["../invoices"]
     
     for dir_name in directories:
         dir_path = Path(dir_name)
@@ -142,13 +144,14 @@ def main():
     print("\n" + "=" * 50)
     print("✅ Setup completed successfully!")
     print("\n📋 What's next:")
-    print("1. Start the bot: python telegram_bot.py")
+    print("1. Start the bot: python bot/telegram_bot.py")
     print("2. Find your bot in Telegram")
     print("3. Send /start command")
     print("4. Use /help for help")
     
     print("\n💡 Generation command example:")
-    print("/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00")
+    print("/generate 04.09.2025 14/09/2025 Organization Organization 3000.00")
 
 if __name__ == "__main__":
     main()
+

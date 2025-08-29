@@ -15,7 +15,7 @@ from docx import Document
 from docx2pdf import convert
 import os
 from pathlib import Path
-from number_converter import NumberToWords
+from converter.number_converter import NumberToWords
 
 class InvoiceGenerator:
     def __init__(self):
@@ -24,7 +24,7 @@ class InvoiceGenerator:
     def load_organizations(self):
         """Load organization data from orgs.json"""
         try:
-            with open('orgs.json', 'r', encoding='utf-8') as f:
+            with open('../resources/orgs.json', 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
             print("Error: orgs.json file not found")
@@ -231,16 +231,16 @@ class InvoiceGenerator:
         
         # Load template
         try:
-            doc = Document('invoice_template.docx')
+            doc = Document('../resources/invoice_template.docx')
         except FileNotFoundError:
-            print("Error: invoice_template.docx not found")
+            print("Error: resources/invoice_template.docx not found")
             sys.exit(1)
         
         # Replace placeholders
         self.replace_placeholders(doc, replacements)
         
         # Create invoices directory if it doesn't exist
-        invoices_dir = "invoices"
+        invoices_dir = "../invoices"
         os.makedirs(invoices_dir, exist_ok=True)
         
         # Generate output filename

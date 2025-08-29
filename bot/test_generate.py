@@ -4,6 +4,7 @@ Test generate command specifically
 """
 
 import os
+import sys
 import logging
 from pathlib import Path
 from dotenv import load_dotenv
@@ -11,10 +12,12 @@ from dotenv import load_dotenv
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
 
 # Load environment variables
-load_dotenv('config.env')
+load_dotenv('../config.env')
 
 # Configure logging
 logging.basicConfig(level=logging.DEBUG)
@@ -44,7 +47,7 @@ async def test_generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
         # Check file
         filename = f"Peraviortkin_Mi_code_{date_str}.docx"
-        docx_path = Path("invoices") / filename
+        docx_path = Path("../invoices") / filename
         
         if docx_path.exists():
             await update.message.reply_text(f"✅ File created: {filename}")
@@ -66,7 +69,7 @@ async def test_generate(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Start command"""
-    await update.message.reply_text("🧪 Test bot started!\nUse: /generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00")
+    await update.message.reply_text("🧪 Test bot started!\nUse: /generate 04.09.2025 14/09/2025 Organization Organization 3000.00")
 
 def main():
     """Main function"""
@@ -88,3 +91,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

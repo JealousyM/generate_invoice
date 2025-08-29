@@ -14,10 +14,12 @@ from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
 from telegram.constants import ParseMode
 
+# Add parent directory to path for imports
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
 
 # Load environment variables
-load_dotenv('config.env')
+load_dotenv('../config.env')
 
 # Configure logging
 logging.basicConfig(
@@ -70,7 +72,7 @@ Available commands:
 Generates invoice with specified parameters
 
 Example:
-`/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00`
+`/generate 04.09.2025 14/09/2025 Organization Organization 3000.00`
 
 📋 `/help` \\- show this help
 📊 `/status` \\- check system status
@@ -95,7 +97,7 @@ Example:
    \\- End Date: DD/MM/YYYY \\(example: 14/09/2025\\)
    
    *Example:*
-   `/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00`
+   `/generate 04.09.2025 14/09/2025 Organization Organization 3000.00`
 
 🔹 `/status` \\- Check system status
 🔹 `/orgs` \\- Show available organizations
@@ -123,7 +125,7 @@ Example:
             orgs_count = len(self.invoice_generator.orgs_data)
             
             # Check invoices directory
-            invoices_dir = Path("invoices")
+            invoices_dir = Path("../invoices")
             invoices_count = len(list(invoices_dir.glob("*.docx"))) if invoices_dir.exists() else 0
             
             current_time = datetime.now().strftime('%d\\.%m\\.%Y %H:%M:%S')
@@ -174,9 +176,9 @@ Example:
                 name = org.get('name', 'No name')
                 data_preview = org.get('data', '')[:100] + '...' if len(org.get('data', '')) > 100 else org.get('data', '')
                 
-                # Escape markdown characters
-                name = name.replace('.', '\\.')
-                data_preview = data_preview.replace('.', '\\.')
+                # Escape markdown characters for Markdown V2
+                name = name.replace('\\', '\\\\').replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}').replace('.', '\\.').replace('!', '\\!')
+                data_preview = data_preview.replace('\\', '\\\\').replace('_', '\\_').replace('*', '\\*').replace('[', '\\[').replace(']', '\\]').replace('(', '\\(').replace(')', '\\)').replace('~', '\\~').replace('`', '\\`').replace('>', '\\>').replace('#', '\\#').replace('+', '\\+').replace('-', '\\-').replace('=', '\\=').replace('|', '\\|').replace('{', '\\{').replace('}', '\\}').replace('.', '\\.').replace('!', '\\!')
                 
                 orgs_text += f"{i}\\. *{name}*\n"
                 orgs_text += f"   {data_preview}\n\n"
@@ -190,10 +192,13 @@ Example:
     async def generate_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Handle /generate command"""
         user_id = update.effective_user.id
+        logger.info(f"=== GENERATE COMMAND HANDLER CALLED ===")
         logger.info(f"Generate command called by user {user_id}")
         logger.info(f"Command args: {context.args}")
+        logger.info(f"Message text: {update.message.text}")
         
         if not self._is_user_allowed(user_id):
+            logger.warning(f"User {user_id} not allowed. Allowed users: {self.allowed_users}")
             await update.message.reply_text("❌ You don't have access to this bot.")
             return
         
@@ -220,7 +225,12 @@ Example:
             
             # Check if files were created
             filename = f"Peraviortkin_Mi_code_{date_str}.docx"
-            docx_path = Path("invoices") / filename
+            docx_path = Path("../invoices") / filename
+            
+            # Log the paths for debugging
+            logger.info(f"Looking for invoice file: {docx_path}")
+            logger.info(f"File exists: {docx_path.exists()}")
+            logger.info(f"Absolute path: {docx_path.absolute()}")
             
             if docx_path.exists():
                 # Escape markdown characters for the success message
@@ -267,13 +277,33 @@ Example:
             await processing_msg.edit_text(error_message, parse_mode=ParseMode.MARKDOWN_V2)
             logger.error(f"Invoice generation error: {e}")
     
-    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
-        """Handle regular messages"""
+    async def debug_command_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Debug handler to catch unhandled commands"""
         user_id = update.effective_user.id
         message_text = update.message.text
-        logger.info(f"Message handler called by user {user_id}, text: '{message_text}'")
+        logger.error(f"=== UNHANDLED COMMAND CAUGHT BY DEBUG HANDLER ===")
+        logger.error(f"Command: '{message_text}' from user {user_id}")
+        logger.error(f"This command was not handled by specific command handlers!")
+        
+        await update.message.reply_text(
+            f"🐛 Debug: Command '{message_text}' was not handled by specific handlers\\!",
+            parse_mode=ParseMode.MARKDOWN_V2
+        )
+
+    async def handle_message(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle regular messages (manually filter out commands)"""
+        user_id = update.effective_user.id
+        message_text = update.message.text
+        
+        # Manual command filtering - ignore all commands
+        if message_text and message_text.startswith('/'):
+            logger.info(f"Command '{message_text}' received by message handler - ignoring (will be handled by command handlers)")
+            return
+        
+        logger.info(f"Non-command message handler called by user {user_id}, text: '{message_text}'")
         
         if not self._is_user_allowed(user_id):
+            logger.warning(f"User {user_id} not in allowed list: {self.allowed_users}")
             return
         
         await update.message.reply_text(
@@ -297,14 +327,26 @@ Example:
         application = Application.builder().token(self.bot_token).build()
         
         # Add command handlers
+        logger.info("Registering command handlers...")
         application.add_handler(CommandHandler("start", self.start_command))
+        logger.info("Registered /start command")
         application.add_handler(CommandHandler("help", self.help_command))
+        logger.info("Registered /help command")
         application.add_handler(CommandHandler("status", self.status_command))
+        logger.info("Registered /status command")
         application.add_handler(CommandHandler("orgs", self.orgs_command))
+        logger.info("Registered /orgs command")
         application.add_handler(CommandHandler("generate", self.generate_command))
+        logger.info("Registered /generate command")
         
-        # Add message handler for non-commands
-        application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, self.handle_message))
+        # Add catch-all command handler for debugging
+        application.add_handler(MessageHandler(filters.COMMAND, self.debug_command_handler))
+        logger.info("Registered debug command handler")
+        
+        # Add message handler for non-commands (manual filter to avoid filters.COMMAND issues)
+        logger.info("Registering message handler for non-commands")
+        application.add_handler(MessageHandler(filters.TEXT, self.handle_message), group=1)
+        logger.info("Message handler registered with group=1 (manual command filtering)")
         
         # Add error handler
         application.add_error_handler(self.error_handler)
@@ -325,7 +367,7 @@ def main():
     print("🤖 Starting Telegram bot for invoice generation (v21.8)...")
     
     # Check if config file exists
-    if not os.path.exists('config.env'):
+    if not os.path.exists('../config.env'):
         print("❌ config.env file not found!")
         print("📝 Run: python setup_bot.py")
         sys.exit(1)
@@ -346,3 +388,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

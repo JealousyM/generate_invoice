@@ -42,24 +42,39 @@ pip install -r requirements.txt
 
 #### Automatic Setup
 ```bash
-python setup_bot.py
+python setup.py
+# OR directly:
+python bot/setup_bot.py
 ```
 
 #### Run the Bot
 ```bash
-python telegram_bot.py
+python start_bot.py
+# OR directly:
+python bot/telegram_bot.py
 ```
 
 ## Available Files
 
-### Recommended for Use
-- ✅ **`telegram_bot.py`** - Main bot (Python 3.13 + PTB 21.8)
-- ✅ `generate_invoice.py` - CLI generator (without PDF)
-- ✅ `setup_bot.py` - Bot setup
+### Root Directory
+- ✅ **`start_bot.py`** - Convenience bot launcher
+- ✅ **`setup.py`** - Convenience setup launcher  
+- ✅ `generate_invoice.py` - CLI invoice generator (without PDF)
+- 📋 `requirements.txt` - Dependencies
+- 📝 `config.env` - Configuration (created during setup)
 
-### Deprecated/Test Files
-- ❌ Old bot versions (removed)
-- 🧪 `test_generate.py` - Test version
+### Bot Directory (`bot/`)
+- 🤖 `telegram_bot.py` - Main Telegram bot
+- ⚙️ `setup_bot.py` - Bot configuration setup
+- 🧪 `test_generate.py` - Test bot version
+- 🔄 `run_bot.py` - Auto-restart bot runner
+
+### Converter Directory (`converter/`)
+- 🔤 `number_converter.py` - Number to words converter
+
+### Resources Directory (`resources/`)
+- 📄 `invoice_template.docx` - Invoice template
+- 📊 `orgs.json` - Organization data
 
 ## Telegram Bot Commands
 
@@ -74,7 +89,7 @@ Create invoice
 
 **Example:**
 ```
-/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+/generate 04.09.2025 14/09/2025 Organization Organization 3000.00
 ```
 
 ### `/status`
@@ -95,28 +110,34 @@ Command help
 ## CLI Usage
 
 ```bash
-python generate_invoice.py 04.09.2025 "14/09/2025" "Retano-Latvia" "Retano-Latvia" 3000.00
+python generate_invoice.py 04.09.2025 "14/09/2025" "Organization" "Organization" 3000.00
 ```
 
 ## Project Structure
 
 ```
 generate-invoice/
-├── 📄 invoice_template.docx       # Invoice template
-├── 📊 orgs.json                   # Organization data
-├── 🚀 telegram_bot.py             # ✅ Main bot (Python 3.13 + PTB 21.8)
-├── 🔧 generate_invoice.py         # CLI generator
-├── 🔤 number_converter.py         # Number to words converter
-├── ⚙️ setup_bot.py               # Bot setup
-├── 📋 requirements.txt            # Dependencies
-├── 📝 config.env                 # Configuration (created during setup)
-├── 📂 invoices/                  # Folder for generated files
-└── 🧪 test_generate.py           # Test version
+├── 📂 bot/                       # Telegram bot files
+│   ├── 🤖 telegram_bot.py        # Main Telegram bot
+│   ├── ⚙️ setup_bot.py          # Bot configuration setup
+│   ├── 🧪 test_generate.py      # Test bot version
+│   └── 🔄 run_bot.py            # Auto-restart bot runner
+├── 📂 converter/                 # Conversion utilities
+│   └── 🔤 number_converter.py   # Number to words converter
+├── 📂 resources/                 # Templates and data
+│   ├── 📄 invoice_template.docx  # Invoice template
+│   └── 📊 orgs.json             # Organization data
+├── 📂 invoices/                  # Generated invoices (created automatically)
+├── 🚀 start_bot.py              # Convenience bot launcher
+├── ⚙️ setup.py                  # Convenience setup launcher
+├── 🔧 generate_invoice.py       # CLI invoice generator
+├── 📋 requirements.txt           # Dependencies
+└── 📝 config.env                # Configuration (created during setup)
 ```
 
 ## Template Placeholders
 
-In the `invoice_template.docx` file, these placeholders are replaced:
+In the `resources/invoice_template.docx` file, these placeholders are replaced:
 
 - `<dd>` - Day
 - `<mm>` - Month  
@@ -131,11 +152,11 @@ In the `invoice_template.docx` file, these placeholders are replaced:
 
 ## Organization Configuration
 
-File `orgs.json`:
+File `resources/orgs.json`:
 ```json
 [
     {
-        "name": "Retano-Latvia",
+        "name": "Organization",
         "data": "RETANO SOLUTIONS LTD\nVesetas 7, Riga, LATVIA\nBank: АО Rietumu Banka\nNr rachunku/ Bank account number: LV72RTMB0000700806618\nSWIFT: RTMBLV2X"
     }
 ]
@@ -184,7 +205,7 @@ pip install -r requirements.txt --force-reinstall
 ```
 
 ### Bot Issues
-1. **Use ONLY `telegram_bot.py`**
+1. **Use `python start_bot.py` or `python bot/telegram_bot.py`**
 2. Check token in `config.env`
 3. Make sure User ID is in ALLOWED_USER_IDS
 4. Check internet connection
@@ -200,14 +221,14 @@ Use DOCX files or convert manually.
 pip install -r requirements.txt
 
 # 2. Bot setup
-python setup_bot.py
+python setup.py
 
 # 3. Start bot
-python telegram_bot.py
+python start_bot.py
 
 # 4. In Telegram:
 /start
-/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+/generate 04.09.2025 14/09/2025 Organization Organization 3000.00
 ```
 
 ## Security

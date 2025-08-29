@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 #### Automatic Setup
 ```bash
-python setup_bot.py
+python setup.py
 ```
 
 Follow the prompts:
@@ -42,20 +42,25 @@ Create `config.env` file:
 ```env
 TELEGRAM_BOT_TOKEN=your_bot_token_here
 ALLOWED_USER_IDS=123456789,987654321
-DEFAULT_BUYER=Retano-Latvia
-DEFAULT_RECIPIENT=Retano-Latvia
+DEFAULT_BUYER=Organization
+DEFAULT_RECIPIENT=Organization
 ```
 
 ### 4. 🚀 Running the Bot
 
 #### Start the Bot
 ```bash
-python telegram_bot.py
+python start_bot.py
 ```
 
-#### Alternative: Auto-restart Runner
+#### Alternative: Direct Launch
 ```bash
-python run_bot.py
+python bot/telegram_bot.py
+```
+
+#### Auto-restart Runner
+```bash
+python bot/run_bot.py
 ```
 
 ## 📱 Using the Bot
@@ -88,7 +93,7 @@ Generate invoice with parameters:
 
 **Example:**
 ```
-/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00
+/generate 04.09.2025 14/09/2025 Organization Organization 3000.00
 ```
 
 ### Parameter Details
@@ -101,12 +106,12 @@ Generate invoice with parameters:
 
 ## 🏢 Organization Configuration
 
-Edit `orgs.json` to add your organizations:
+Edit `resources/orgs.json` to add your organizations:
 
 ```json
 [
     {
-        "name": "Retano-Latvia",
+        "name": "Organization",
         "data": "RETANO SOLUTIONS LTD\\nVesetas 7, Riga, LATVIA\\nBank: АО Rietumu Banka\\nNr rachunku/ Bank account number: LV72RTMB0000700806618\\nSWIFT: RTMBLV2X"
     },
     {
@@ -129,8 +134,8 @@ Edit `orgs.json` to add your organizations:
 - If ALLOWED_USER_IDS is empty, bot is open to everyone
 
 ### Invoice Generation Fails
-1. Check if `invoice_template.docx` exists
-2. Verify `orgs.json` contains valid organizations
+1. Check if `resources/invoice_template.docx` exists
+2. Verify `resources/orgs.json` contains valid organizations
 3. Check `invoices/` directory exists and is writable
 
 ### Python/Library Issues
@@ -170,33 +175,41 @@ pip install -r requirements.txt --force-reinstall
 ## 📊 File Structure
 ```
 project/
-├── 📄 invoice_template.docx    # Invoice template
-├── 📊 orgs.json               # Organization data
-├── 🤖 telegram_bot.py         # Main bot script
-├── 🔧 generate_invoice.py     # CLI generator
-├── ⚙️ setup_bot.py           # Setup script
-├── 📋 requirements.txt        # Dependencies
-├── 📝 config.env             # Bot configuration
-├── 📂 invoices/              # Generated invoices
-└── 📚 TELEGRAM_BOT_GUIDE.md  # This guide
+├── 📂 bot/                      # Telegram bot files
+│   ├── 🤖 telegram_bot.py      # Main bot script
+│   ├── ⚙️ setup_bot.py         # Setup script
+│   ├── 🧪 test_generate.py     # Test bot
+│   └── 🔄 run_bot.py           # Auto-restart runner
+├── 📂 converter/                # Conversion utilities
+│   └── 🔤 number_converter.py  # Number to words converter
+├── 📂 resources/                # Templates and data
+│   ├── 📄 invoice_template.docx # Invoice template
+│   └── 📊 orgs.json            # Organization data
+├── 📂 invoices/                 # Generated invoices
+├── 🚀 start_bot.py             # Convenience bot launcher
+├── ⚙️ setup.py                 # Convenience setup launcher
+├── 🔧 generate_invoice.py      # CLI generator
+├── 📋 requirements.txt         # Dependencies
+├── 📝 config.env              # Bot configuration
+└── 📚 TELEGRAM_BOT_GUIDE.md   # This guide
 ```
 
 ## 🎯 Example Workflow
 
-1. **Setup**: Run `python setup_bot.py`
-2. **Start**: Run `python telegram_bot.py`
+1. **Setup**: Run `python setup.py`
+2. **Start**: Run `python start_bot.py`
 3. **Find Bot**: Search for your bot in Telegram
 4. **Test**: Send `/start` to verify it works
-5. **Generate**: Send `/generate 04.09.2025 14/09/2025 Retano-Latvia Retano-Latvia 3000.00`
+5. **Generate**: Send `/generate 04.09.2025 14/09/2025 Organization Organization 3000.00`
 6. **Download**: Bot will send you the generated DOCX file
 
 ## ❓ FAQ
 
 ### Q: Can I change the invoice template?
-A: Yes, edit `invoice_template.docx` but keep the placeholders (`<dd>`, `<mm>`, etc.)
+A: Yes, edit `resources/invoice_template.docx` but keep the placeholders (`<dd>`, `<mm>`, etc.)
 
 ### Q: How do I add new organizations?
-A: Edit `orgs.json` and add new organization objects
+A: Edit `resources/orgs.json` and add new organization objects
 
 ### Q: Can multiple people use the bot?
 A: Yes, add their User IDs to ALLOWED_USER_IDS in `config.env`

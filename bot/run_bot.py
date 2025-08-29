@@ -11,10 +11,10 @@ from pathlib import Path
 
 def check_config():
     """Check if config file exists"""
-    config_path = Path("config.env")
+    config_path = Path("../config.env")
     if not config_path.exists():
         print("❌ config.env file not found!")
-        print("📝 Run: python setup_bot.py")
+        print("📝 Run: python bot/setup_bot.py")
         return False
     return True
 
@@ -63,3 +63,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
