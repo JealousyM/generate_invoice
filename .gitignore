@@ -4,11 +4,6 @@ dist/
 json/
 .venv/
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
-*.pyw
-*.pyz
 
 # Environment
 .env
