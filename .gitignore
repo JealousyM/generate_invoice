@@ -39,8 +39,6 @@ Thumbs.db
 .docker/
 docker-compose.override.yml 
 
-#Docs
-*.docx
 
 #python
 
@@ -67,3 +65,4 @@ dev-debug.log
 .taskmaster/
 config.env
 orgs.json
+invoices/
