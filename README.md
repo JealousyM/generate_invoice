@@ -166,8 +166,8 @@ File `resources/orgs.json`:
 ```json
 [
     {
-        "name": "Organization",
-        "data": "RETANO SOLUTIONS LTD\nVesetas 7, Riga, LATVIA\nBank: АО Rietumu Banka\nNr rachunku/ Bank account number: LV72RTMB0000700806618\nSWIFT: RTMBLV2X"
+        "name": "YourCompany",
+        "data": "Your Company Name\\nYour Address\\nBank Details"
     }
 ]
 ```
