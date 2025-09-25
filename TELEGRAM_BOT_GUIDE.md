@@ -220,6 +220,30 @@ A: Contact @BotFather and use `/token` command to get a new one
 ### Q: Why doesn't PDF generation work?
 A: PDF generation is disabled due to Python 3.13 compatibility issues. Use DOCX files or convert manually.
 
+## 📬 Gmail Listener (Optional)
+
+The bot can forward new emails from specific Gmail correspondents straight into Telegram chats.
+
+### Requirements
+- Gmail account with IMAP enabled
+- App password generated (required if 2FA is on)
+- Correspondent email list
+
+### Configuration Steps
+1. Enable IMAP in Gmail settings.
+2. Create an app password for the account.
+3. Add to `config.env`:
+   - `GMAIL_USERNAME`
+   - `GMAIL_APP_PASSWORD`
+   - `CORRESPONDENTS` (semicolon separated list)
+   - Optional: `MAIL_CHECK_INTERVAL` (seconds, default 60)
+4. Restart the bot.
+
+### Usage Notes
+- Gmail polling is disabled if config values are missing.
+- Bot forwards subject and body to the chats that interacted with it.
+- If no chat is available yet, the bot falls back to allowed user IDs.
+
 ## 🐛 Reporting Issues
 
 If you encounter problems:

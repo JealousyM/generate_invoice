@@ -13,6 +13,7 @@ Automated invoice generation system with Telegram bot support, adapted for **Pyt
 - 🔤 Amount conversion to words (Polish and English)
 - 📂 Save to `invoices/` folder
 - 🏢 Multiple organizations support
+- 📬 Gmail listener forwards new emails from configured correspondents to the bot
 - 🤖 **Telegram Bot (version 21.8) - FULLY WORKING**
 - 🔒 User access control
 
@@ -53,6 +54,15 @@ python start_bot.py
 # OR directly:
 python bot/telegram_bot.py
 ```
+
+### 3. Gmail Listener Setup (optional)
+
+1. Enable [IMAP access](https://support.google.com/mail/answer/7126229) for the Gmail account.
+2. Create an [app password](https://support.google.com/mail/answer/185833) (required when 2FA is enabled).
+3. Open `config.env` and set:
+   - `ALLOWED_USER_IDS`
+   - `GMAIL_USERNAME`, `GMAIL_APP_PASSWORD`, `CORRESPONDENTS`, `MAIL_CHECK_INTERVAL`
+4. Restart the bot so the new configuration loads.
 
 ## Available Files
 
@@ -161,96 +171,3 @@ File `resources/orgs.json`:
     }
 ]
 ```
-
-## Fixed Issues
-
-### ✅ Python 3.13 Compatibility
-- Used compatible version python-telegram-bot 21.8
-- Fixed all issues with `imghdr` module
-- Updated imports for new API
-
-### ✅ Telegram Bot Issues  
-- Fixed "Application object has no attribute" error
-- Correct async/await operation
-- Proper Markdown V2 formatting
-- Stable polling operation
-
-### ✅ Stability
-- Removed problematic PDF generation
-- Improved error handling
-- Detailed logging
-
-## Dependencies
-
-```txt
-python-docx==1.1.2
-docx2pdf==0.1.8
-requests==2.31.0
-python-telegram-bot==21.8
-python-dotenv==1.0.0
-```
-
-## Troubleshooting
-
-### Version Check
-```bash
-python --version          # Should be 3.13.x
-pip show python-telegram-bot  # Should be 21.8
-```
-
-### Reinstallation
-```bash
-pip install python-telegram-bot==21.8 --force-reinstall
-pip install -r requirements.txt --force-reinstall
-```
-
-### Bot Issues
-1. **Use `python start_bot.py` or `python bot/telegram_bot.py`**
-2. Check token in `config.env`
-3. Make sure User ID is in ALLOWED_USER_IDS
-4. Check internet connection
-
-### PDF Generation
-⚠️ **PDF generation disabled** due to compatibility issues.
-Use DOCX files or convert manually.
-
-## Example Session
-
-```bash
-# 1. Installation
-pip install -r requirements.txt
-
-# 2. Bot setup
-python setup.py
-
-# 3. Start bot
-python start_bot.py
-
-# 4. In Telegram:
-/start
-/generate 04.09.2025 14/09/2025 Organization Organization 3000.00
-```
-
-## Security
-
-- 🔒 Never publish `config.env`
-- 👥 Restrict access via ALLOWED_USER_IDS
-- 🔑 Regularly change bot token
-
-## Technical Notes
-
-- ⚡ Fully compatible with Python 3.13
-- 🤖 Uses python-telegram-bot 21.8 (latest stable)
-- 🔄 All async functions correctly implemented
-- 📝 Markdown V2 formatting
-- 🛡️ Robust error handling
-
----
-
-## Status: ✅ FULLY WORKING
-
-Project fully working with Python 3.13 and Telegram Bot API 21.8!
-
-## License
-
-MIT License

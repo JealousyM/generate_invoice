@@ -3,11 +3,13 @@
 Telegram Bot for Invoice Generation (Version 21.8 compatible)
 """
 
+import logging
 import os
 import sys
-import logging
 from datetime import datetime
 from pathlib import Path
+from typing import Set
+
 from dotenv import load_dotenv
 
 from telegram import Update
@@ -17,6 +19,7 @@ from telegram.constants import ParseMode
 # Add parent directory to path for imports
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
+from gmail_listener import GmailListener, EmailPayload
 
 # Load environment variables
 load_dotenv('../config.env')
@@ -33,9 +36,21 @@ class InvoiceTelegramBot:
         self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
         self.allowed_users = self._parse_allowed_users()
         self.invoice_generator = InvoiceGenerator()
+        self.gmail_listener = GmailListener(logger=logger)
+        self.gmail_enabled = self.gmail_listener.is_configured()
+        self._subscribed_chats: Set[int] = set()
         
         if not self.bot_token:
             raise ValueError("TELEGRAM_BOT_TOKEN not found in config.env")
+
+        if self.gmail_enabled:
+            logger.info(
+                "Gmail listener enabled (correspondents: %s | interval: %ss)",
+                ", ".join(sorted(self.gmail_listener.correspondents)) or "none",
+                self.gmail_listener.interval,
+            )
+        else:
+            logger.info("Gmail listener disabled (missing configuration)")
     
     def _parse_allowed_users(self):
         """Parse allowed user IDs from environment"""
@@ -62,6 +77,9 @@ class InvoiceTelegramBot:
         if not self._is_user_allowed(user_id):
             await update.message.reply_text("❌ You don't have access to this bot.")
             return
+
+        if update.effective_chat:
+            self._subscribed_chats.add(update.effective_chat.id)
         
         welcome_message = """
 🏦 *Invoice Generator*
@@ -130,15 +148,24 @@ Example:
             
             current_time = datetime.now().strftime('%d\\.%m\\.%Y %H:%M:%S')
             
+            gmail_status = "Enabled" if self.gmail_enabled else "Disabled"
+            gmail_status = gmail_status.replace('.', '\\.')
+            gmail_tracking = len(self.gmail_listener.correspondents)
+            gmail_tracking_text = (
+                f"tracked {gmail_tracking} addresses" if gmail_tracking else "no tracked addresses"
+            )
+            gmail_tracking_text = gmail_tracking_text.replace('.', '\\.')
+
             status_message = f"""
 📊 *System Status:*
 
 ✅ Invoice Generator: Working
 ✅ Organizations in database: {orgs_count}
 📁 Invoices created: {invoices_count}
+📬 Gmail listener: {gmail_status} ({gmail_tracking_text})
 🕐 Check time: {current_time}
 
-🟢 System ready to work\\!
+🟢 System ready to work\!
             """
             
         except Exception as e:
@@ -305,10 +332,13 @@ Example:
         if not self._is_user_allowed(user_id):
             logger.warning(f"User {user_id} not in allowed list: {self.allowed_users}")
             return
-        
+
+        if update.effective_chat:
+            self._subscribed_chats.add(update.effective_chat.id)
+
         await update.message.reply_text(
-            "💡 Use commands to work with the bot\\.\n"
-            "Type /help for help\\.",
+            "💡 Use commands to work with the bot\.\n"
+            "Type /help for help\.",
             parse_mode=ParseMode.MARKDOWN_V2
         )
     
@@ -318,6 +348,27 @@ Example:
         
         if update and hasattr(update, 'message') and update.message:
             await update.message.reply_text("❌ Internal error occurred. Please try again later.")
+
+    async def _notify_email(self, bot, payload: EmailPayload):
+        """Dispatch Gmail notification to known chat IDs."""
+
+        message_text = self.gmail_listener.format_notification(payload)
+
+        targets: Set[int] = set(self._subscribed_chats)
+        if not targets and self.allowed_users:
+            targets.update(self.allowed_users)
+
+        if not targets:
+            logger.warning(
+                "Email UID %s ready but no chat IDs registered for notifications", payload.uid
+            )
+            return
+
+        for chat_id in targets:
+            try:
+                await bot.send_message(chat_id=chat_id, text=message_text)
+            except Exception as exc:
+                logger.error("Failed to send email notification to chat %s: %s", chat_id, exc)
     
     def run(self):
         """Start the bot"""
@@ -350,6 +401,18 @@ Example:
         
         # Add error handler
         application.add_error_handler(self.error_handler)
+
+        if self.gmail_enabled:
+            logger.info("Scheduling Gmail listener job (interval: %ss)", self.gmail_listener.interval)
+            application.job_queue.run_repeating(
+                self.gmail_listener.job_handler,
+                interval=self.gmail_listener.interval,
+                first=5,
+                name="gmail-listener",
+                data={"notify": self._notify_email},
+            )
+        else:
+            logger.info("Gmail listener not scheduled (disabled)")
         
         # Start the bot
         logger.info("Bot is starting to poll for updates...")
