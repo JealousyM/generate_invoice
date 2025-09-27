@@ -16,6 +16,7 @@ Automated invoice generation system with Telegram bot support, adapted for **Pyt
 - 📬 Gmail listener forwards new emails from configured correspondents to the bot
 - 🤖 **Telegram Bot (version 21.8) - FULLY WORKING**
 - 🔒 User access control
+- 📊 **Jira Work Reports - NEW FEATURE**
 
 ### ⚠️ Disabled Features
 - ❌ PDF generation (compatibility issues with Python 3.13)
@@ -108,6 +109,19 @@ Check system status
 ### `/orgs`
 List available organizations
 
+### `/report`
+Generate Jira work report for a specific month
+```
+/report <month>
+```
+
+**Examples:**
+```
+/report september
+/report august
+/report ijul
+```
+
 ### `/help`
 Command help
 
@@ -171,3 +185,44 @@ File `resources/orgs.json`:
     }
 ]
 ```
+
+## Jira Work Reports
+
+### Configuration
+
+Add to `bot/config.env`:
+```env
+# Jira Configuration
+JIRA_SERVER=https://your-company.atlassian.net
+JIRA_USERNAME=your_username@example.com
+JIRA_API_TOKEN=your_jira_api_token
+JIRA_PROJECT_KEY=PROJECT
+REPORT_AUTHOR=Your Name
+```
+
+### Usage
+
+#### Via Telegram Bot:
+```
+/report september
+```
+
+#### Via Command Line:
+```bash
+python jira_report_generator.py september
+```
+
+### Supported Month Formats:
+- **English:** january, february, march, april, may, june, july, august, september, october, november, december
+- **Abbreviations:** jan, feb, mar, apr, may, jun, jul, aug, sep, oct, nov, dec
+- **Russian (transliterated):** janvar, fevral, mart, aprel, maj, ijun, ijul, avgust, sentjabr, oktjabr, nojabr, dekabr
+
+### How it Works:
+1. Connects to Jira using API token
+2. Searches for tasks where you participated (assignee, reporter, commented)
+3. Uses template `resources/report_work_template.docx`
+4. Replaces `MM` with month number, `yyyy` with year
+5. Adds tasks in format `(<task>)<title_task>`
+6. Saves to `reports/` directory
+
+For detailed documentation, see [JIRA_REPORTS_GUIDE.md](JIRA_REPORTS_GUIDE.md).

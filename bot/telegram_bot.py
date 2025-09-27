@@ -20,6 +20,7 @@ from telegram.constants import ParseMode
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
 from gmail_listener import GmailListener, EmailPayload
+from jira_report_generator import JiraReportGenerator
 
 # Load environment variables
 load_dotenv('../config.env')
@@ -39,6 +40,16 @@ class InvoiceTelegramBot:
         self.gmail_listener = GmailListener(logger=logger)
         self.gmail_enabled = self.gmail_listener.is_configured()
         self._subscribed_chats: Set[int] = set()
+        
+        # Initialize Jira Report Generator
+        try:
+            self.jira_report_generator = JiraReportGenerator()
+            self.jira_enabled = True
+            logger.info("Jira report generator enabled")
+        except Exception as e:
+            self.jira_report_generator = None
+            self.jira_enabled = False
+            logger.warning(f"Jira report generator disabled: {e}")
         
         if not self.bot_token:
             raise ValueError("TELEGRAM_BOT_TOKEN not found in config.env")
@@ -92,6 +103,9 @@ Generates invoice with specified parameters
 Example:
 `/generate 04.09.2025 14/09/2025 Organization Organization 3000.00`
 
+📊 `/report <month>` \\- generate Jira work report for month
+Example: `/report september`
+
 📋 `/help` \\- show this help
 📊 `/status` \\- check system status
 🏢 `/orgs` \\- show available organizations
@@ -116,6 +130,13 @@ Example:
    
    *Example:*
    `/generate 04.09.2025 14/09/2025 Organization Organization 3000.00`
+
+🔹 `/report <month>` \\- Generate Jira work report
+   Creates a report of tasks you participated in during the specified month
+   
+   *Examples:*
+   `/report september` \\- report for September
+   `/report august` \\- report for August
 
 🔹 `/status` \\- Check system status
 🔹 `/orgs` \\- Show available organizations
@@ -155,6 +176,9 @@ Example:
                 f"tracked {gmail_tracking} addresses" if gmail_tracking else "no tracked addresses"
             )
             gmail_tracking_text = gmail_tracking_text.replace('.', '\\.')
+            
+            jira_status = "Enabled" if self.jira_enabled else "Disabled"
+            jira_status = jira_status.replace('.', '\\.')
 
             status_message = f"""
 📊 *System Status:*
@@ -163,6 +187,7 @@ Example:
 ✅ Organizations in database: {orgs_count}
 📁 Invoices created: {invoices_count}
 📬 Gmail listener: {gmail_status} ({gmail_tracking_text})
+🎯 Jira reports: {jira_status}
 🕐 Check time: {current_time}
 
 🟢 System ready to work\!
@@ -304,6 +329,90 @@ Example:
             await processing_msg.edit_text(error_message, parse_mode=ParseMode.MARKDOWN_V2)
             logger.error(f"Invoice generation error: {e}")
     
+    async def report_command(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
+        """Handle /report command"""
+        user_id = update.effective_user.id
+        logger.info(f"Report command called by user {user_id}")
+        logger.info(f"Command args: {context.args}")
+        
+        if not self._is_user_allowed(user_id):
+            logger.warning(f"User {user_id} not allowed. Allowed users: {self.allowed_users}")
+            await update.message.reply_text("❌ You don't have access to this bot.")
+            return
+        
+        if not self.jira_enabled:
+            await update.message.reply_text(
+                "❌ Jira reports are disabled\\. Check Jira configuration\\.",
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+            return
+        
+        # Parse command arguments
+        if len(context.args) != 1:
+            await update.message.reply_text(
+                "❌ Invalid command format\\!\n\n"
+                "Use:\n"
+                "`/report <month>`\n\n"
+                "Examples:\n"
+                "`/report september`\n"
+                "`/report august`",
+                parse_mode=ParseMode.MARKDOWN_V2
+            )
+            return
+        
+        month_text = context.args[0]
+        
+        # Send "processing" message
+        processing_msg = await update.message.reply_text("⏳ Generating Jira work report...")
+        
+        try:
+            # Generate report
+            report_path = self.jira_report_generator.generate_report(month_text)
+            
+            if report_path and report_path.exists():
+                # Escape filename for markdown
+                escaped_filename = report_path.name.replace('.', '\\.')
+                escaped_month = month_text.replace('_', '\\_')
+                
+                # Send success message
+                success_message = f"""
+✅ *Jira report successfully created\\!*
+
+📄 File: `{escaped_filename}`
+📅 Month: {escaped_month}
+📊 Report type: Work tasks report
+
+📁 File saved to reports/ folder
+                """
+                
+                await processing_msg.edit_text(success_message, parse_mode=ParseMode.MARKDOWN_V2)
+                
+                # Send the DOCX file
+                try:
+                    with open(report_path, 'rb') as doc_file:
+                        await context.bot.send_document(
+                            chat_id=update.effective_chat.id,
+                            document=doc_file,
+                            filename=report_path.name,
+                            caption=f"📊 Work Report: {month_text}"
+                        )
+                except Exception as e:
+                    await update.message.reply_text(f"⚠️ Report created but failed to send: {str(e)}")
+                    
+            else:
+                await processing_msg.edit_text("❌ No tasks found for the specified month or report generation failed")
+                
+        except ValueError as e:
+            # Handle specific parsing errors
+            error_message = f"❌ Error: {str(e)}"
+            await processing_msg.edit_text(error_message, parse_mode=ParseMode.MARKDOWN_V2)
+            logger.error(f"Report generation value error: {e}")
+            
+        except Exception as e:
+            error_message = f"❌ Error generating report:\n`{str(e)}`"
+            await processing_msg.edit_text(error_message, parse_mode=ParseMode.MARKDOWN_V2)
+            logger.error(f"Report generation error: {e}")
+    
     async def debug_command_handler(self, update: Update, context: ContextTypes.DEFAULT_TYPE):
         """Debug handler to catch unhandled commands"""
         user_id = update.effective_user.id
@@ -389,6 +498,8 @@ Example:
         logger.info("Registered /orgs command")
         application.add_handler(CommandHandler("generate", self.generate_command))
         logger.info("Registered /generate command")
+        application.add_handler(CommandHandler("report", self.report_command))
+        logger.info("Registered /report command")
         
         # Add catch-all command handler for debugging
         application.add_handler(MessageHandler(filters.COMMAND, self.debug_command_handler))
