@@ -15,7 +15,7 @@ from docx import Document
 from dotenv import load_dotenv
 
 # Load environment variables
-load_dotenv('bot/config.env')
+load_dotenv('config.env')  # Load from root config.env, not bot/config.env
 
 class JiraReportGenerator:
     def __init__(self):
@@ -86,36 +86,78 @@ class JiraReportGenerator:
         start_date = first_day.strftime('%Y-%m-%d')
         end_date = last_day.strftime('%Y-%m-%d')
         
-        # JQL to find issues where user was assignee, reporter, or made comments
+        # JQL to find issues where user was assignee or reporter
+        # Use specific username instead of currentUser() for better compatibility
+        username = self.jira_username
+        project_key = os.getenv("JIRA_PROJECT_KEY", "RGS")
+        
+        # Statuses to exclude (configurable via environment or use default)
+        # Common excluded statuses: New, Postponed, Backlog, etc.
+        excluded_statuses = os.getenv("JIRA_EXCLUDED_STATUSES", "New,Postponed,Backlog")
+        
+        if excluded_statuses and excluded_statuses.strip():
+            # Build status exclusion clause
+            statuses_list = [f'"{s.strip()}"' for s in excluded_statuses.split(',')]
+            status_exclude = f'AND status NOT IN ({", ".join(statuses_list)})'
+        else:
+            # No status exclusion
+            status_exclude = ''
+        
         jql_queries = [
-            f'assignee = currentUser() AND updated >= "{start_date}" AND updated <= "{end_date}"',
-            f'reporter = currentUser() AND created >= "{start_date}" AND created <= "{end_date}"',
-            f'issueFunction in commented("by currentUser() after {start_date} before {end_date}")'
+            # Tasks assigned to user updated in the period
+            f'assignee = "{username}" AND updated >= "{start_date}" AND updated <= "{end_date}" {status_exclude}',
+            # Tasks created by user
+            f'reporter = "{username}" AND created >= "{start_date}" AND created <= "{end_date}" {status_exclude}'
         ]
+        
+        print(f"Using JQL queries with username: {username}")
+        print(f"Date range: {start_date} to {end_date}")
+        print(f"Project key: {os.getenv('JIRA_PROJECT_KEY', 'RGS')}")
         
         all_issues_dict = {}  # Use dict to avoid duplicates by key
         
-        for jql in jql_queries:
+        for i, jql in enumerate(jql_queries, 1):
             try:
+                try:
+                    print(f"\nExecuting JQL query {i}/{len(jql_queries)}: {jql}")
+                except UnicodeEncodeError:
+                    print(f"\nExecuting JQL query {i}/{len(jql_queries)}")
+                
                 # Use atlassian-python-api's jql method
                 issues_data = self.jira_client.jql(jql, limit=200)
                 issues = issues_data.get('issues', [])
+                
+                print(f"Raw response: {len(issues)} issues")
                 
                 # Convert to simple objects for consistency
                 for issue in issues:
                     key = issue.get('key')
                     if key and key not in all_issues_dict:
+                        summary = issue.get('fields', {}).get('summary', 'No title')
                         issue_obj = type('Issue', (), {
                             'key': key,
                             'fields': type('Fields', (), {
-                                'summary': issue.get('fields', {}).get('summary', 'No title')
+                                'summary': summary
                             })()
                         })()
                         all_issues_dict[key] = issue_obj
+                        # Avoid encoding errors in console output
+                        try:
+                            print(f"  Added issue: {key} - {summary}")
+                        except UnicodeEncodeError:
+                            print(f"  Added issue: {key} - [title with non-ASCII chars]")
                 
-                print(f"Found {len(issues)} issues with JQL: {jql}")
+                print(f"Query {i} result: {len(issues)} issues found")
+                
+            except UnicodeEncodeError as ue:
+                print(f"Encoding error with query {i}, but continuing...")
+                continue
             except Exception as e:
-                print(f"Warning: Error with JQL query '{jql}': {e}")
+                try:
+                    print(f"ERROR with JQL query {i}: {e}")
+                    print(f"Query was: {jql}")
+                except UnicodeEncodeError:
+                    print(f"ERROR with JQL query {i}: [error message with non-ASCII chars]")
                 continue
         
         # Convert to list and sort by key
@@ -151,8 +193,8 @@ class JiraReportGenerator:
             
             # Prepare replacements for template
             replacements = {
-                'MM': f"{month_num:02d}",
-                'yyyy': str(year)
+                '<MM>': f"{month_num:02d}",
+                '<yyyy>': str(year)
             }
             
             # Replace MM and yyyy in document
@@ -161,11 +203,13 @@ class JiraReportGenerator:
             # Add tasks to document
             self._add_tasks_to_document(doc, issues)
             
-            # Generate output filename
+            # Generate output filename (transliterate cyrillic to avoid encoding issues)
             reports_dir = Path("reports")
             reports_dir.mkdir(exist_ok=True)
             
-            filename = f"{self.report_author.replace(' ', '_')}_work_report_{month_name.lower()}_{year}.docx"
+            # Transliterate cyrillic author name to latin characters for filename
+            author_safe = self._transliterate_filename(self.report_author)
+            filename = f"{author_safe}_work_report_{month_name.lower()}_{year}.docx"
             output_path = reports_dir / filename
             
             # Save document
@@ -196,25 +240,74 @@ class JiraReportGenerator:
                                 paragraph.text = paragraph.text.replace(placeholder, value)
     
     def _add_tasks_to_document(self, doc, issues):
-        """Add tasks list to the document"""
-        # Find a paragraph where we want to insert tasks (after MM and yyyy replacements)
-        # We'll add tasks at the end of the document
-        
-        # Add a heading for tasks
-        doc.add_heading('Выполненные задачи:', level=2)
-        
-        # Add each task
+        """Add tasks list to the document by replacing placeholder"""
+        # Build tasks text
+        tasks_lines = []
         for issue in issues:
             task_key = issue.key
             task_title = issue.fields.summary
-            
             # Format: (<task>)<title_task>
-            task_text = f"({task_key}){task_title}"
-            doc.add_paragraph(task_text)
+            tasks_lines.append(f"({task_key}){task_title}")
         
-        # Add summary
-        doc.add_paragraph("")
-        doc.add_paragraph(f"Всего задач: {len(issues)}")
+        # Join all tasks with newlines
+        tasks_text = '\n'.join(tasks_lines)
+        
+        # Find and replace the placeholder (<task>)<title_task>
+        placeholder = '(<task>)<title_task>'
+        
+        # Search in paragraphs
+        for paragraph in doc.paragraphs:
+            if placeholder in paragraph.text:
+                paragraph.text = paragraph.text.replace(placeholder, tasks_text)
+                return
+        
+        # Search in tables
+        for table in doc.tables:
+            for row in table.rows:
+                for cell in row.cells:
+                    for paragraph in cell.paragraphs:
+                        if placeholder in paragraph.text:
+                            paragraph.text = paragraph.text.replace(placeholder, tasks_text)
+                            return
+        
+        # If placeholder not found, add tasks at the end (fallback)
+        print(f"Warning: Placeholder '{placeholder}' not found in template, adding tasks at the end")
+        doc.add_heading('Tasks:', level=2)
+        doc.add_paragraph(tasks_text)
+    
+    def _transliterate_filename(self, text):
+        """Transliterate cyrillic characters to latin for safe filenames"""
+        # Simple transliteration map for cyrillic to latin
+        translit_map = {
+            'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+            'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'j', 'к': 'k', 'л': 'l', 'м': 'm',
+            'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+            'ф': 'f', 'х': 'h', 'ц': 'c', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch', 'ъ': '',
+            'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+            
+            'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+            'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'J', 'К': 'K', 'Л': 'L', 'М': 'M',
+            'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+            'Ф': 'F', 'Х': 'H', 'Ц': 'C', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch', 'Ъ': '',
+            'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+        }
+        
+        # Transliterate text
+        result = ''
+        for char in text:
+            if char in translit_map:
+                result += translit_map[char]
+            elif char.isalnum() or char in '-_':
+                result += char
+            else:
+                result += '_'
+        
+        # Clean up multiple underscores and spaces
+        result = result.replace(' ', '_')
+        while '__' in result:
+            result = result.replace('__', '_')
+        
+        return result.strip('_')
 
 
 def main():

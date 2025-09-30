@@ -66,3 +66,4 @@ dev-debug.log
 config.env
 orgs.json
 invoices/
+reports/

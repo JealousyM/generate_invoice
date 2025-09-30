@@ -20,7 +20,7 @@ from telegram.constants import ParseMode
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
 from gmail_listener import GmailListener, EmailPayload
-from jira_report_generator import JiraReportGenerator
+from jira.jira_report_generator import JiraReportGenerator
 
 # Load environment variables
 load_dotenv('../config.env')

@@ -148,10 +148,18 @@ generate-invoice/
 │   └── 🔄 run_bot.py            # Auto-restart bot runner
 ├── 📂 converter/                 # Conversion utilities
 │   └── 🔤 number_converter.py   # Number to words converter
+├── 📂 jira/                      # Jira integration
+│   ├── 📊 jira_report_generator.py # Jira report generator
+│   └── __init__.py              # Module initialization
 ├── 📂 resources/                 # Templates and data
 │   ├── 📄 invoice_template.docx  # Invoice template
+│   ├── 📄 report_work_template.docx # Jira report template
 │   └── 📊 orgs.json             # Organization data
-├── 📂 invoices/                  # Generated invoices (created automatically)
+├── 📂 invoices/                  # Generated invoices (auto-created)
+├── 📂 reports/                   # Generated Jira reports (auto-created)
+├── 📂 docs/                      # Documentation
+│   ├── 📄 JIRA_REPORTS_GUIDE.md  # Jira reports guide
+│   └── 📄 TELEGRAM_BOT_GUIDE.md  # Telegram bot guide
 ├── 🚀 start_bot.py              # Convenience bot launcher
 ├── ⚙️ setup.py                  # Convenience setup launcher
 ├── 🔧 generate_invoice.py       # CLI invoice generator
@@ -209,7 +217,7 @@ REPORT_AUTHOR=Your Name
 
 #### Via Command Line:
 ```bash
-python jira_report_generator.py september
+python jira/jira_report_generator.py september
 ```
 
 ### Supported Month Formats:
@@ -225,4 +233,4 @@ python jira_report_generator.py september
 5. Adds tasks in format `(<task>)<title_task>`
 6. Saves to `reports/` directory
 
-For detailed documentation, see [JIRA_REPORTS_GUIDE.md](JIRA_REPORTS_GUIDE.md).
+For detailed documentation, see [JIRA_REPORTS_GUIDE.md](docs/JIRA_REPORTS_GUIDE.md).
