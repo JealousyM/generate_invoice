@@ -537,12 +537,13 @@ Example: `/report september`
 
 def main():
     """Main function"""
-    print("🤖 Starting Telegram bot for invoice generation (v21.8)...")
+    print("Starting Telegram bot for invoice generation (v21.8)...")
     
     # Check if config file exists
-    if not os.path.exists('../config.env'):
-        print("❌ config.env file not found!")
-        print("📝 Run: python setup_bot.py")
+    config_path = os.path.join(os.path.dirname(__file__), '..', 'config.env')
+    if not os.path.exists(config_path):
+        print("ERROR: config.env file not found!")
+        print("Run: python setup_bot.py")
         sys.exit(1)
     
     try:
@@ -552,7 +553,7 @@ def main():
         print("\n⏹️ Bot stopped by user")
     except ValueError as e:
         print(f"❌ Configuration error: {e}")
-        print("📝 Check config.env file or run: python setup_bot.py")
+        print("Check config.env file or run: python setup_bot.py")
         sys.exit(1)
     except Exception as e:
         print(f"❌ Critical error: {e}")
