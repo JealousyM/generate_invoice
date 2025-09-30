@@ -14,11 +14,15 @@ from atlassian import Jira
 from docx import Document
 from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv('config.env')  # Load from root config.env, not bot/config.env
+# Load environment variables from project root
+_project_root = Path(__file__).parent.parent.resolve()
+load_dotenv(_project_root / 'config.env')
 
 class JiraReportGenerator:
     def __init__(self):
+        # Get project root directory (parent of jira_integration folder)
+        self.project_root = Path(__file__).parent.parent.resolve()
+        
         self.jira_server = os.getenv('JIRA_SERVER')
         self.jira_username = os.getenv('JIRA_USERNAME')
         self.jira_api_token = os.getenv('JIRA_API_TOKEN')
@@ -185,7 +189,7 @@ class JiraReportGenerator:
                 return None
             
             # Load template
-            template_path = Path("resources/report_work_template.docx")
+            template_path = self.project_root / "resources" / "report_work_template.docx"
             if not template_path.exists():
                 raise FileNotFoundError(f"Template not found: {template_path}")
             
@@ -204,7 +208,7 @@ class JiraReportGenerator:
             self._add_tasks_to_document(doc, issues)
             
             # Generate output filename (transliterate cyrillic to avoid encoding issues)
-            reports_dir = Path("reports")
+            reports_dir = self.project_root / "reports"
             reports_dir.mkdir(exist_ok=True)
             
             # Transliterate cyrillic author name to latin characters for filename

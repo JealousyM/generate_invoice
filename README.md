@@ -34,7 +34,31 @@ Automated invoice generation system with Telegram bot support, adapted for **Pyt
 pip install -r requirements.txt
 ```
 
-### 2. Telegram Bot Setup (recommended)
+### 2. Prepare Templates
+
+**IMPORTANT:** Template files are provided as examples and need to be customized for your use.
+
+The project includes template files in the `resources/` folder:
+- `invoice_template.docx` - Invoice generation template
+- `report_work_template.docx` - Jira work report template
+
+**Before using:**
+1. Open the templates in Microsoft Word
+2. Customize them with your company information, logo, and formatting
+3. Keep the placeholders intact (e.g., `<date>`, `<MM>`, `<yyyy>`, etc.)
+4. Save the customized templates with the same filenames
+
+**Template Placeholders:**
+
+For `invoice_template.docx`:
+- `<date>`, `<end_date>`, `<number>`, `<amount>`, `<amount_words>`, etc.
+
+For `report_work_template.docx`:
+- `<MM>` - Month number (e.g., 09)
+- `<yyyy>` - Year (e.g., 2025)
+- `(<task>)<title_task>` - Will be replaced with actual task list
+
+### 3. Telegram Bot Setup (recommended)
 
 #### Create Bot via BotFather
 1. Find @BotFather in Telegram
@@ -56,7 +80,7 @@ python start_bot.py
 python bot/telegram_bot.py
 ```
 
-### 3. Gmail Listener Setup (optional)
+### 4. Gmail Listener Setup (optional)
 
 1. Enable [IMAP access](https://support.google.com/mail/answer/7126229) for the Gmail account.
 2. Create an [app password](https://support.google.com/mail/answer/185833) (required when 2FA is enabled).
@@ -169,18 +193,28 @@ generate-invoice/
 
 ## Template Placeholders
 
-In the `resources/invoice_template.docx` file, these placeholders are replaced:
+### Invoice Template (`invoice_template.docx`)
+
+These placeholders are replaced during invoice generation:
 
 - `<dd>` - Day
 - `<mm>` - Month  
 - `<yyyy>` - Year
-- `<buyer>` - Buyer data
-- `<recipient>` - Recipient data
+- `<buyer>` - Buyer organization data
+- `<recipient>` - Recipient organization data
 - `<summ>` - Amount
 - `<termin>` - Payment deadline
 - `<summ_words_polland>` - Amount in words (Polish)
 - `<summ_words_english>` - Amount in words (English)
 - `<nbp_kurs>` - NBP EUR exchange rate
+
+### Jira Report Template (`report_work_template.docx`)
+
+These placeholders are replaced during report generation:
+
+- `<MM>` - Month number (01-12)
+- `<yyyy>` - Year (e.g., 2025)
+- `(<task>)<title_task>` - Task list placeholder (replaced with actual tasks in format: `(TASK-123)Task Title`)
 
 ## Organization Configuration
 

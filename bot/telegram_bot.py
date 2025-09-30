@@ -22,8 +22,9 @@ from generate_invoice import InvoiceGenerator
 from gmail_listener import GmailListener, EmailPayload
 from jira_integration.jira_report_generator import JiraReportGenerator
 
-# Load environment variables
-load_dotenv('../config.env')
+# Load environment variables from project root
+_bot_dir = Path(__file__).parent.resolve()
+load_dotenv(_bot_dir.parent / 'config.env')
 
 # Configure logging
 logging.basicConfig(
@@ -34,6 +35,9 @@ logger = logging.getLogger(__name__)
 
 class InvoiceTelegramBot:
     def __init__(self):
+        # Get project root directory (parent of bot folder)
+        self.project_root = Path(__file__).parent.parent.resolve()
+        
         self.bot_token = os.getenv('TELEGRAM_BOT_TOKEN')
         self.allowed_users = self._parse_allowed_users()
         self.invoice_generator = InvoiceGenerator()
@@ -164,7 +168,7 @@ Example: `/report september`
             orgs_count = len(self.invoice_generator.orgs_data)
             
             # Check invoices directory
-            invoices_dir = Path("../invoices")
+            invoices_dir = self.project_root / "invoices"
             invoices_count = len(list(invoices_dir.glob("*.docx"))) if invoices_dir.exists() else 0
             
             current_time = datetime.now().strftime('%d\\.%m\\.%Y %H:%M:%S')
@@ -186,11 +190,11 @@ Example: `/report september`
 ✅ Invoice Generator: Working
 ✅ Organizations in database: {orgs_count}
 📁 Invoices created: {invoices_count}
-📬 Gmail listener: {gmail_status} ({gmail_tracking_text})
+📬 Gmail listener: {gmail_status} \\({gmail_tracking_text}\\)
 🎯 Jira reports: {jira_status}
 🕐 Check time: {current_time}
 
-🟢 System ready to work!
+🟢 System ready to work\\!
             """
             
         except Exception as e:
@@ -277,7 +281,7 @@ Example: `/report september`
             
             # Check if files were created
             filename = f"Peraviortkin_Mi_code_{date_str}.docx"
-            docx_path = Path("../invoices") / filename
+            docx_path = self.project_root / "invoices" / filename
             
             # Log the paths for debugging
             logger.info(f"Looking for invoice file: {docx_path}")

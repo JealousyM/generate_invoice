@@ -19,15 +19,18 @@ from converter.number_converter import NumberToWords
 
 class InvoiceGenerator:
     def __init__(self):
+        # Get project root directory (where this file is located)
+        self.project_root = Path(__file__).parent.resolve()
         self.orgs_data = self.load_organizations()
     
     def load_organizations(self):
         """Load organization data from orgs.json"""
         try:
-            with open('../resources/orgs.json', 'r', encoding='utf-8') as f:
+            orgs_path = self.project_root / 'resources' / 'orgs.json'
+            with open(orgs_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            print("Error: orgs.json file not found")
+            print(f"Error: orgs.json file not found at {orgs_path}")
             sys.exit(1)
         except json.JSONDecodeError:
             print("Error: Invalid JSON in orgs.json")
@@ -231,16 +234,17 @@ class InvoiceGenerator:
         
         # Load template
         try:
-            doc = Document('../resources/invoice_template.docx')
+            template_path = self.project_root / 'resources' / 'invoice_template.docx'
+            doc = Document(template_path)
         except FileNotFoundError:
-            print("Error: resources/invoice_template.docx not found")
+            print(f"Error: invoice_template.docx not found at {template_path}")
             sys.exit(1)
         
         # Replace placeholders
         self.replace_placeholders(doc, replacements)
         
         # Create invoices directory if it doesn't exist
-        invoices_dir = "../invoices"
+        invoices_dir = self.project_root / 'invoices'
         os.makedirs(invoices_dir, exist_ok=True)
         
         # Generate output filename
