@@ -20,7 +20,7 @@ from telegram.constants import ParseMode
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from generate_invoice import InvoiceGenerator
 from gmail_listener import GmailListener, EmailPayload
-from jira.jira_report_generator import JiraReportGenerator
+from jira_integration.jira_report_generator import JiraReportGenerator
 
 # Load environment variables
 load_dotenv('../config.env')
@@ -190,7 +190,7 @@ Example: `/report september`
 🎯 Jira reports: {jira_status}
 🕐 Check time: {current_time}
 
-🟢 System ready to work\!
+🟢 System ready to work!
             """
             
         except Exception as e:
@@ -446,8 +446,7 @@ Example: `/report september`
             self._subscribed_chats.add(update.effective_chat.id)
 
         await update.message.reply_text(
-            "💡 Use commands to work with the bot\.\n"
-            "Type /help for help\.",
+            r"💡 Use commands to work with the bot\." "\n" r"Type /help for help\.",
             parse_mode=ParseMode.MARKDOWN_V2
         )
     

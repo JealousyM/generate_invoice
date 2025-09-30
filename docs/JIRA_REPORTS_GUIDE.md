@@ -61,7 +61,7 @@ Make sure the `resources/report_work_template.docx` file contains:
 ### Via Command Line
 
 ```bash
-python jira/jira_report_generator.py september
+python jira_integration/jira_report_generator.py september
 ```
 
 ## Supported Month Formats
@@ -87,7 +87,7 @@ python jira/jira_report_generator.py september
 ## File Structure
 
 ```
-├── jira/
+├── jira_integration/
 │   └── jira_report_generator.py  # Main class for working with Jira
 ├── bot/telegram_bot.py            # Telegram bot with /report command
 ├── resources/
@@ -102,7 +102,7 @@ python jira/jira_report_generator.py september
 Run tests to verify configuration:
 
 ```bash
-python jira/jira_report_generator.py september
+python jira_integration/jira_report_generator.py september
 ```
 
 ## Troubleshooting
@@ -135,7 +135,7 @@ Console encoding errors (e.g., 'charmap' codec) don't affect report generation -
 /report september
 
 # Generate report for August via command line
-python jira/jira_report_generator.py august
+python jira_integration/jira_report_generator.py august
 
 # Using abbreviated month name
 /report sep

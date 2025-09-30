@@ -148,7 +148,7 @@ generate-invoice/
 │   └── 🔄 run_bot.py            # Auto-restart bot runner
 ├── 📂 converter/                 # Conversion utilities
 │   └── 🔤 number_converter.py   # Number to words converter
-├── 📂 jira/                      # Jira integration
+├── 📂 jira_integration/          # Jira integration
 │   ├── 📊 jira_report_generator.py # Jira report generator
 │   └── __init__.py              # Module initialization
 ├── 📂 resources/                 # Templates and data
@@ -217,7 +217,7 @@ REPORT_AUTHOR=Your Name
 
 #### Via Command Line:
 ```bash
-python jira/jira_report_generator.py september
+python jira_integration/jira_report_generator.py september
 ```
 
 ### Supported Month Formats:
