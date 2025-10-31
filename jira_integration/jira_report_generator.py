@@ -8,11 +8,16 @@ Generates work reports from Jira tasks for a specific month
 import os
 import sys
 import calendar
+import logging
 from datetime import datetime, timedelta
 from pathlib import Path
 from atlassian import Jira
 from docx import Document
 from dotenv import load_dotenv
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Load environment variables from project root
 _project_root = Path(__file__).parent.parent.resolve()
@@ -40,9 +45,11 @@ class JiraReportGenerator:
             self.jira_client = Jira(
                 url=self.jira_server,
                 username=self.jira_username,
-                password=self.jira_api_token
+                password=self.jira_api_token,
+                cloud=True
             )
-            print(f"Successfully connected to Jira: {self.jira_server}")
+            logger.info(f"Successfully connected to Jira: {self.jira_server}")
+            logger.info(f"Jira client API root: {self.jira_client.resource_url('')}")
         except Exception as e:
             raise ConnectionError(f"Failed to connect to Jira: {e}")
     
@@ -81,6 +88,47 @@ class JiraReportGenerator:
         last_day = datetime(year, month_num, last_day_num, 23, 59, 59)
         
         return first_day, last_day
+    
+    def _jql_search_v3(self, jql, limit=200):
+        """Execute JQL search using API v3 enhanced search endpoint"""
+        logger.info(f"Executing JQL search with API v3: {jql}")
+        
+        # Build the full API v3 URL manually - using the NEW /search/jql endpoint
+        base_url = self.jira_server.rstrip('/')
+        full_url = f"{base_url}/rest/api/3/search/jql"
+        
+        params = {
+            'jql': jql,
+            'maxResults': limit,
+            'fields': ['summary', 'key']
+        }
+        
+        try:
+            logger.info(f"API v3 URL: {full_url}")
+            logger.info(f"Query params: {params}")
+            
+            # Use the Jira client's session directly to bypass the resource_url() method
+            response = self.jira_client.session.get(
+                full_url,
+                params=params,
+                auth=(self.jira_username, self.jira_api_token)
+            )
+            
+            logger.info(f"Response status code: {response.status_code}")
+            
+            if response.status_code != 200:
+                error_msg = response.text
+                logger.error(f"API returned error: {error_msg}")
+                raise Exception(f"API request failed with status {response.status_code}: {error_msg}")
+            
+            result = response.json()
+            logger.info(f"API v3 response: success, issues count: {len(result.get('issues', []))}")
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"API v3 request failed: {e}")
+            raise
     
     def get_user_tasks_for_month(self, month_num, year):
         """Get all tasks where current user participated in the given month"""
@@ -123,14 +171,17 @@ class JiraReportGenerator:
         for i, jql in enumerate(jql_queries, 1):
             try:
                 try:
+                    logger.info(f"\nExecuting JQL query {i}/{len(jql_queries)}: {jql}")
                     print(f"\nExecuting JQL query {i}/{len(jql_queries)}: {jql}")
                 except UnicodeEncodeError:
+                    logger.info(f"\nExecuting JQL query {i}/{len(jql_queries)}")
                     print(f"\nExecuting JQL query {i}/{len(jql_queries)}")
                 
-                # Use atlassian-python-api's jql method
-                issues_data = self.jira_client.jql(jql, limit=200)
+                # Use API v3 search method
+                issues_data = self._jql_search_v3(jql, limit=200)
                 issues = issues_data.get('issues', [])
                 
+                logger.info(f"Raw response: {len(issues)} issues")
                 print(f"Raw response: {len(issues)} issues")
                 
                 # Convert to simple objects for consistency
@@ -154,9 +205,12 @@ class JiraReportGenerator:
                 print(f"Query {i} result: {len(issues)} issues found")
                 
             except UnicodeEncodeError as ue:
+                logger.warning(f"Encoding error with query {i}, but continuing...")
                 print(f"Encoding error with query {i}, but continuing...")
                 continue
             except Exception as e:
+                logger.error(f"ERROR with JQL query {i}: {e}")
+                logger.error(f"Query was: {jql}")
                 try:
                     print(f"ERROR with JQL query {i}: {e}")
                     print(f"Query was: {jql}")
@@ -168,6 +222,7 @@ class JiraReportGenerator:
         issues_list = list(all_issues_dict.values())
         issues_list.sort(key=lambda x: x.key)
         
+        logger.info(f"Total unique issues found for {calendar.month_name[month_num]} {year}: {len(issues_list)}")
         print(f"Total unique issues found for {calendar.month_name[month_num]} {year}: {len(issues_list)}")
         return issues_list
     
@@ -179,12 +234,14 @@ class JiraReportGenerator:
             month_num, year = self.parse_month_year(month_text, current_year)
             month_name = calendar.month_name[month_num]
             
+            logger.info(f"Generating report for {month_name} {year}")
             print(f"Generating report for {month_name} {year}")
             
             # Get user tasks
             issues = self.get_user_tasks_for_month(month_num, year)
             
             if not issues:
+                logger.warning(f"No tasks found for {month_name} {year}")
                 print(f"No tasks found for {month_name} {year}")
                 return None
             
@@ -218,11 +275,13 @@ class JiraReportGenerator:
             
             # Save document
             doc.save(output_path)
+            logger.info(f"Report generated successfully: {output_path}")
             print(f"Report generated: {output_path}")
             
             return output_path
             
         except Exception as e:
+            logger.error(f"Error generating report: {e}")
             print(f"Error generating report: {e}")
             raise
     
